@@ -32,8 +32,8 @@ function checkDocker() {
     if ! [[ $(which docker) && $(docker ps) ]]; then
         colorEcho ${RED} "docker is not installed/running"
         exit 1
-    elif ! [[ $(which docker-compose) ]]; then
-        colorEcho ${RED} "docker-compose is not installed"
+    elif ! [[ $(which docker compose) ]]; then
+        colorEcho ${RED} "docker compose is not installed"
         exit 1
     fi
 
@@ -174,7 +174,7 @@ function pullDockerImage() {
 
 	colorEcho ${GREEN} "Pulling $1 image."
 
-	docker images | grep $IMAGE_ID || docker-compose --project-directory $PROJECT_DIR pull
+	docker images | grep $IMAGE_ID || docker compose -f $PROJECT_DIR/docker-compose.yml pull
 	if [[ $? -ne 0 ]]; then
 		[[ -e $IMAGE_FILE ]] || env all_proxy=$all_proxy curl -fSLo $IMAGE_FILE $IMAGE_DOWNLOAD_LINK
 		if [[ $(sha1sum $IMAGE_FILE | awk '{print $1}') == $IMAGE_TAR_SHA1SUM ]]; then
@@ -289,7 +289,7 @@ function installConfigRun() {
 			(.outbounds[] | select(.protocol | match(\"^shadowsocks$\")) | .settings.servers[].password) |= \"$SHADOWSOCKS_PASSWORD\" " $V2RAY_CLIENT_CONFIG_TEMPLATE > ${V2RAY_CLIENT_CONFIG}
 
 		# Run V2Ray
-		docker-compose --project-directory v2ray-upstream-server up -d
+		docker compose -f ./v2ray-upstream-server/docker-compose.yml up -d
 		# check if running
 		sleep 5 && checkContainerRunning "v2ray_upstream"
 
@@ -326,7 +326,7 @@ function installConfigRun() {
 		fi
 		
 		# Run HAProxy
-		docker-compose --project-directory haproxy-bridge-server up -d
+		docker compose -f ./haproxy-bridge-server/docker-compose.yml up -d
 		sleep 5 && checkContainerRunning "haproxy_bridge"
 		colorEcho ${GREEN} "$SERVER_TYPE server setup finished."
 		colorEcho ${GREEN} "HAProxy stats page url: https://${SERVER_PUB_IP}:6543/stats"
@@ -358,7 +358,7 @@ function uninstallV2ray() {
 	done
 	if [[ $CONFIRM_UNINSTALL == "y" ]]; then 
 		rm -rf $DATA_DIR
-		docker-compose --project-directory v2ray-upstream-server down
+		docker compose -f ./v2ray-upstream-server/docker-compose.yml down
 		colorEcho ${GREEN} "Uninstalled V2Ray from $SERVER_TYPE Server."
 	fi
 
@@ -374,7 +374,7 @@ function checkContainerRunning() {
 	CID=$(docker ps --filter=name=$1 --filter=status=running -q)
 	if [[ -z $CID ]]; then
 		colorEcho ${RED} "Container $1 does not exist or is not running. Container logs: "
-		docker-compose --project-directory $PROJECT_DIR logs 
+		docker compose -f $PROJECT_DIR/docker-compose.yml logs 
 		colorEcho ${YELLOW} "If you keep seeing this as startup, try uninstalling the service and install again\n\n"
 
 		# exit unless second parameter is 'noexit'
@@ -429,19 +429,19 @@ if [[ -e $DATA_DIR/params ]]; then
 			read -rp "Do you want to uninstall it?  (y/n) " -e -i "n" UNINSTALL_BRIDGE
 		done
 		if [[ $UNINSTALL_BRIDGE == "y" ]]; then 
-			docker-compose --project-directory haproxy-bridge-server down && rm -rf $DATA_DIR
+			docker compose -f ./haproxy-bridge-server/docker-compose.yml down && rm -rf $DATA_DIR
 			colorEcho ${GREEN} "Uninstalled HAProxy from Bridge Server."
 		fi
 	fi
 
-elif [[ -n $(docker-compose --project-directory haproxy-bridge-server ps -q) ]] || [[ -n $(docker-compose --project-directory v2ray-upstream-server ps -q) ]]; then
+elif [[ -n $(docker compose -f ./haproxy-bridge-server/docker-compose.yml ps -q) ]] || [[ -n $(docker compose -f ./v2ray-upstream-server/docker-compose.yml ps -q) ]]; then
 	colorEcho ${YELLOW} "It looks like you have executed the script before but the setup was not finished!"
 	until [[ ${REMOVE_RUNNING_CONTAINER} =~ ^(y|n)$ ]]; do
 		read -rp "Stop and delete running container?(running container is v2ray or haproxy or maybe even both) (y/n) " -e -i "y" REMOVE_RUNNING_CONTAINER
 	done
 	if [[ $REMOVE_RUNNING_CONTAINER == "y" ]]; then
-		docker-compose --project-directory haproxy-bridge-server down
-		docker-compose --project-directory v2ray-upstream-server down
+		docker compose -f ./haproxy-bridge-server/docker-compose.yml down
+		docker compose -f ./v2ray-upstream-server/docker-compose.yml down
 		colorEcho ${GREEN} "Stopped and removed. Proceeding..."
 		installConfigRun
 	else
