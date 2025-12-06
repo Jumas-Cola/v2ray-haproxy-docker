@@ -145,9 +145,9 @@
         "network": "ws",
         "wsSettings": {
           "connectionReuse": true,
-          "path": "/Play/",
+          "path": "/v1/subscribe/",
           "headers": {
-            "Host": "sound.tebyan.net"
+            "Host": "push.yandex.com"
           }
         }
       },
