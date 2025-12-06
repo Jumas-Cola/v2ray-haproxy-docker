@@ -7,7 +7,7 @@ services:
     restart: always
     environment:
       - v2ray.vmess.aead.forced=false
-    command: [ "v2ray","run", "-c", "/etc/v2ray/config.json" ]
+    command: [ "run", "-c", "/etc/v2ray/config.json" ]
     ports:
       - 1081:1081
       - 1082:1082
