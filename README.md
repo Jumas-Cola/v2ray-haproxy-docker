@@ -36,6 +36,27 @@ Note: Since these transports overlap, you might be using more than one of them a
 ### Server
 Clone the repo and execute the insall script on both bridge and upstream server. Answer the questions asked by the script and it will take care of the rest.
 
+
+### Recommend to use only VLESS-TLS-Direct and VLESS-TLS-Bridged, because of safety and privacy.
+
+To use TLS, uou should buy domain name and set up A record for it:
+
+```
+A www <Upstream-IP>
+A h2 <Upstream-IP>
+```
+
+After that you should replace 'varzesh3.com' to your domain name in this files:
+
+```
+v2ray-upstream-server/config/config-template-with-tls.json
+v2ray-upstream-server/config/config-template.json
+v2ray-docker-client/config/config-template-with-tls.json
+v2ray-docker-client/config/config-template.json
+```
+
+### Installation
+
 ```bash
 git clone https://github.com/UZziell/v2ray-haproxy-docker;
 cd v2ray-haproxy-docker;
