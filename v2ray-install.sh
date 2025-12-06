@@ -270,8 +270,43 @@ function installConfigRun() {
 			cp $CERT_PATH $V2RAY_SERVER_CERTIFICATE 
 			cp $KEY_PATH  $V2RAY_SERVER_CERTIFICATE_KEY
 		else
-            echo "Generating a self-signed certificate for proxy protocols that use TLS as security"
-            openssl req -x509 -newkey rsa:2048 -keyout $V2RAY_SERVER_CERTIFICATE_KEY -out $V2RAY_SERVER_CERTIFICATE -sha256 -nodes -days 365 -subj "/CN=$SERVER_PUB_IP" 2> /dev/null
+            if [[ $DOMAIN && $EMAIL ]]; then
+                echo "Generating a LetsEncrypt certificate for proxy protocols that use TLS as security"
+                
+                CONFIG_PATH="./v2ray-upstream-server/config"
+
+                docker run --rm \
+                    -v "$CONFIG_PATH":/etc/letsencrypt \
+                    -p 80:80 \
+                    certbot/certbot certonly \
+                    --standalone \
+                    -d $DOMAIN \
+                    --email $EMAIL \
+                    --agree-tos \
+                    --non-interactive
+
+                CERT_DIR="$CONFIG_PATH/live/$DOMAIN"
+
+                cp "$CERT_DIR/fullchain.pem" $V2RAY_SERVER_CERTIFICATE
+
+                cp "$CERT_DIR/privkey.pem" $V2RAY_SERVER_CERTIFICATE_KEY
+            else
+                echo "Generating a self-signed certificate for proxy protocols that use TLS as security"
+
+                TEMP_SAN_CONF=$(mktemp)
+                echo "subjectAltName = IP:$SERVER_PUB_IP" > $TEMP_SAN_CONF
+
+                openssl req -x509 -newkey rsa:2048 \
+                    -keyout $V2RAY_SERVER_CERTIFICATE_KEY \
+                    -out $V2RAY_SERVER_CERTIFICATE \
+                    -sha256 -nodes -days 365 \
+                    -subj "/CN=$SERVER_PUB_IP" \
+                    -extensions SAN \
+                    -config <(cat /etc/ssl/openssl.cnf $TEMP_SAN_CONF) \
+                    2> /dev/null
+
+                rm $TEMP_SAN_CONF
+            fi
 		fi
         # prepare V2Ray config files
         export UUID=$(cat /proc/sys/kernel/random/uuid)

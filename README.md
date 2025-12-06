@@ -61,6 +61,11 @@ v2ray-docker-client/config/config-template.json
 git clone https://github.com/UZziell/v2ray-haproxy-docker;
 cd v2ray-haproxy-docker;
 chmod +x v2ray-install.sh;
+
+# if you want to use LetsEncrypt add environment variables:
+# export DOMAIN="www.your-domain.com"
+# export EMAIL="your-email@example.com" 
+
 sudo ./v2ray-install.sh
 ```
 Run the script again to uninstall the service.
